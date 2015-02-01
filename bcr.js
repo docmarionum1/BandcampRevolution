@@ -1,6 +1,6 @@
 bandCampRevolution = function(restartDelay, respawnConstant) {
-	restartDelay = typeof restartDelay !== 'undefined' ?  restartDelay : 1400;
-	respawnConstant = typeof respawnConstant !== 'undefined' ? respawnConstant : 110000;
+	restartDelay = typeof restartDelay !== 'undefined' ?  restartDelay : 1800;
+	respawnConstant = typeof respawnConstant !== 'undefined' ? respawnConstant : 130000;
 	
 	var loaded = false;
 	var first = true;
@@ -12,22 +12,29 @@ bandCampRevolution = function(restartDelay, respawnConstant) {
 	var currentValues = [0,0,0,0];
 	var delta = [0,0,0,0];
 	var spawnTimer = [0,100,0,100];
-	var arrowChars = ["☜", "☟", "☞", "☝"];
-	var keyCodes = [37, 40, 39, 38];
+	var arrowChars = ["☜", "☟", "☝", "☞"];
+	var keyCodes = [37, 40, 38, 39];
 	var arrowX = [0, 125, 250, 375];
 	var xOffset = (screen.width - 500)/2;
 	var processOrder = [0, 2, 1, 3];
 	var scoreArrowTop = 150;
 	var fps = 60;
+	var actualFps = 60;
 	var yStart = screen.height;
 	var distance = yStart - scoreArrowTop;
 	var speed = distance/(restartDelay/1000*fps);
 	var score = 0;
 	var scoreElem = null;
+	var previousFrameTime = null;
 
 	function restartA() {
 		a.currentTime = 0;
-		a.play();
+		if (b.currentTime * 1000 >= restartDelay) {
+			a.play();
+		} else {
+			setTimeout(restartA, 4);
+			restartDelay = (b.currentTime - a.currentTime) * 1000;
+		}
 	}
 
 	function sumArray(a, i, j) {
@@ -39,8 +46,15 @@ bandCampRevolution = function(restartDelay, respawnConstant) {
 	}
 
 	function moveArrows() {
+		speed = distance/(restartDelay/1000*actualFps);
+		
 		for (var i = 0; i < arrows.length; i++) {
 			arrows[i].style.top = (parseInt(arrows[i].style.top) - speed) + "px";
+			
+			/*if (arrows[i].startTime && parseInt(arrows[i].style.top) < scoreArrowTop) {
+				console.log( restartDelay - ((new Date()) - arrows[i].startTime));
+				arrows[i].startTime = null;
+			}*/
 			
 			if (parseInt(arrows[i].style.top) < -100) {
 				document.body.removeChild(arrows[i]);
@@ -100,6 +114,12 @@ bandCampRevolution = function(restartDelay, respawnConstant) {
 		
 		function renderFrame() {
 			setTimeout(function() {
+				if (previousFrameTime) {
+					actualFps = 1000/((new Date()) - previousFrameTime);
+					actualFps = actualFps > fps ? fps : actualFps;
+				}
+				previousFrameTime = new Date();
+				
 				requestAnimationFrame(renderFrame);
 				analyser.getByteFrequencyData(frequencyData);
 				if (first) {
@@ -129,6 +149,7 @@ bandCampRevolution = function(restartDelay, respawnConstant) {
 						arrow.style.top = yStart + "px";
 						arrow.style.left = xOffset + arrowX[i] + "px";
 						arrow.keyCode = keyCodes[i];
+						arrow.startTime = new Date();
 						arrow.style.zIndex = 10;
 						document.body.appendChild(arrow);
 						arrows.push(arrow);
@@ -150,7 +171,7 @@ bandCampRevolution = function(restartDelay, respawnConstant) {
 					e.preventDefault();
 					for (var j = 0; j < arrows.length; j++) {
 						var d = Math.abs(scoreArrowTop - parseInt(arrows[j].style.top));
-						if (arrows[j].keyCode == e.keyCode && d < 75) {
+						if (arrows[j].keyCode == e.keyCode && d < 75 + speed) {
 							score += (75-d)*100;
 							scoreElem.innerHTML = score;
 							scoreElem.style.color = "green";
