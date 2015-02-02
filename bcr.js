@@ -28,6 +28,7 @@ bandCampRevolution = function(restartDelay, respawnConstant) {
 	var scoreError = 75; //How much error there is on timing the button presses.
 	var previousFrameTime = null;
 	var spawnThreshold = 800;
+	var paused = false;
 
 	//Audio elements
 	var a = null;
@@ -38,6 +39,8 @@ bandCampRevolution = function(restartDelay, respawnConstant) {
 	var cover = null;
 	var scoreArrows = [];
 	var arrows = [];
+
+
 
 	function restartA() {
 		a.currentTime = 0;
@@ -177,35 +180,56 @@ bandCampRevolution = function(restartDelay, respawnConstant) {
 				actualFps = actualFps > fps ? fps : actualFps;
 			}
 			previousFrameTime = new Date();
-			
-			analyseAudio();
-			moveArrows();
-			spawnArrows();
+
+			if (!paused) {
+				analyseAudio();
+				moveArrows();
+				spawnArrows();
+			}
 
 		}, 1000/fps);
 	}
 
 	function keyHandler(e) {
-		for (var i = 0; i < 4; i++) {
-			if (e.keyCode == keyCodes[i]) {
-				e.preventDefault();
-				for (var j = 0; j < arrows.length; j++) {
-					var d = Math.abs(scoreArrowTop - parseInt(arrows[j].style.top));
-					if (arrows[j].keyCode == e.keyCode && d < scoreError + speed) {
-						score += (scoreError-d)*100;
-						scoreElem.innerHTML = score;
-						scoreElem.style.color = "green";
-						document.body.removeChild(arrows[j]);
-						arrows.splice(j,1);
-						return;
-					}
-				}
+		if (e.keyCode == 32) {
+			pauseUnpauseGame();
+			e.preventDefault();
+		}
 
-				//If a key was pressed incorrectly
-				score -= 5000;
-				scoreElem.innerHTML = score;
-				scoreElem.style.color = "red";
+		if (!paused) {
+			for (var i = 0; i < 4; i++) {
+				if (e.keyCode == keyCodes[i]) {
+					e.preventDefault();
+					for (var j = 0; j < arrows.length; j++) {
+						var d = Math.abs(scoreArrowTop - parseInt(arrows[j].style.top));
+						if (arrows[j].keyCode == e.keyCode && d < scoreError + speed) {
+							score += (scoreError-d)*100;
+							scoreElem.innerHTML = score;
+							scoreElem.style.color = "green";
+							document.body.removeChild(arrows[j]);
+							arrows.splice(j,1);
+							return;
+						}
+					}
+
+					//If a key was pressed incorrectly
+					score -= 5000;
+					scoreElem.innerHTML = score;
+					scoreElem.style.color = "red";
+				}
 			}
+		}
+	}
+
+	function pauseUnpauseGame() {
+		if (paused) {
+			a.play();
+			b.play();
+			paused = false;
+		} else {
+			a.pause();
+			b.pause();
+			paused = true;
 		}
 	}
 
