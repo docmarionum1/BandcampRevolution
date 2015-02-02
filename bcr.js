@@ -267,7 +267,7 @@ bandCampRevolution = function(restartDelay, respawnConstant) {
         });
 
         cover = createElement('div', {}, {
-            position: "absolute", width: screen.width + "px",
+            position: "absolute", width: "100%",
             height: screen.height + "px", opacity: .7, top: "0px",
             backgroundColor: "#000000"
         });
