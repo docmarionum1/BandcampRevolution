@@ -36,16 +36,18 @@
 		1. Get Chrome.<br/>
 		2. Drag one of the following links into your bookmarks bar:<br/><br/>
 		
-			<a style="margin-left:50px" href="javascript: (function () { 
+			<a style="margin-left:50px" href="javascript: (function () {
+				var cachebuster = Math.round(new Date().getTime() / 1); 
 				var jsCode = document.createElement('script'); 
-				jsCode.setAttribute('src', 'http://jeremyneiman.com/bcr/bcr.js');                  
+				jsCode.setAttribute('src', 'http://jeremyneiman.com/bcr/bcr.js?cb=' + cachebuster);                  
 				document.body.appendChild(jsCode);
 				jsCode.onload = function() {bandCampRevolution();};
 			 }());">Play Bandcamp Revolution!</a>
 			 
-			 <a style="margin-left:50px" href="javascript: (function () { 
+			 <a style="margin-left:50px" href="javascript: (function () {
+			 	var cachebuster = Math.round(new Date().getTime() / 1);  
 				var jsCode = document.createElement('script'); 
-				jsCode.setAttribute('src', 'http://jeremyneiman.com/bcr/bcr.js');                  
+				jsCode.setAttribute('src', 'http://jeremyneiman.com/bcr/bcr.js?cb=' + cachebuster);                  
 				document.body.appendChild(jsCode);
 				jsCode.onload = function() {bandCampRevolution(1000, 80000);};
 			 }());">Play Bandcamp Revolution! (Hard Mode)</a><br/><br/>
