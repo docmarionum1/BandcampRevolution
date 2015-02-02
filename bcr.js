@@ -1,6 +1,27 @@
-bandCampRevolution = function() {
-    //restartDelay = typeof restartDelay !== 'undefined' ?  restartDelay : 1800;
-    //respawnConstant = typeof respawnConstant !== 'undefined' ? respawnConstant : 75000;
+bandCampRevolution = function(difficulty) {
+    difficulty = difficulty !== 'undefined' ? difficulty : 1;
+
+    var spawnThreshold;
+    var maxHoldMultiplier;
+    var restartDelay;
+    if (difficulty == 1) {
+        spawnThreshold = 30000;
+        maxHoldMultiplier = Math.pow(2, 24);
+        restartDelay = 1800;
+    }
+    if (difficulty == 2) {
+        spawnThreshold = 22000;
+        maxHoldMultiplier = Math.pow(2, 16);
+        restartDelay = 1400;
+    }
+    if (difficulty == 3) {
+        spawnThreshold = 18000;
+        maxHoldMultiplier = Math.pow(2, 8);
+        restartDelay = 1000;
+    }
+
+    var minThreshold = spawnThreshold/20;
+    var speed = distance/(restartDelay/1000*fps);
 
     //Dimensions
     var xOffset = (screen.width - 500)/2;
@@ -20,8 +41,8 @@ bandCampRevolution = function() {
     var delta = [0,0,0,0];
     var averages = [0, 0, 0, 0];
     var averageCount = 0;
+    var size = 200;
 
-    var spawnTimer = [200,300,300,200];
     var reverseSpawnTimer = [-100,-100,-100,-100];
     var arrowChars = ["☜", "☟", "☝", "☞"];
     var keyCodes = [37, 40, 38, 39];
@@ -31,11 +52,9 @@ bandCampRevolution = function() {
     var score = 0;
     var scoreError = 75; //How much error there is on timing the button presses.
     var previousFrameTime = null;
-    //var spawnThreshold = 1200;
     
     
     var paused = false;
-	//var defaultSpawnTimer = respawnConstant/1500;
     var processOrders = [
         [1, 0, 3, 2],
         [2, 3, 0, 1]
@@ -44,36 +63,14 @@ bandCampRevolution = function() {
     var holdMultiplier = 1;
 
     //Audio elements
-    var a = null;
-    var b = null;
+    a = null;
+    b = null;
 
     //Game Elements
     var scoreElem = null;
     var cover = null;
     var scoreArrows = [];
     var arrows = [];
-
-
-    var spawnThreshold;
-    var maxHoldMultiplier;
-    var restartDelay;
-
-    var difficulty = 2;
-    if (difficulty == 1) {
-        spawnThreshold = 30000;
-        maxHoldMultiplier = Math.pow(2, 24);//2526;
-        restartDelay = 1800;
-        //maxDelay = 20;
-    }
-    if (difficulty == 2) {
-        spawnThreshold = 22000;
-        maxHoldMultiplier = Math.pow(2, 18);//2526;
-        restartDelay = 1200;
-        //maxDelay = 20;
-    }
-
-    var minThreshold = spawnThreshold/20;
-    var speed = distance/(restartDelay/1000*fps);
 
 
     function restartA() {
@@ -172,70 +169,22 @@ bandCampRevolution = function() {
             previousValues[i] = currentValues[i];
         }
         
-        rawValues[0] = sumArray(frequencyData, 0, 200);
-        rawValues[1] = sumArray(frequencyData, 200, 400);
-        rawValues[2] = sumArray(frequencyData, 400, 600);
-        rawValues[3] = sumArray(frequencyData, 600, 800);
+
+        
+
 
         averageCount++;
 
         for (var i = 0; i < 4; i++) {
+            rawValues[i] = sumArray(frequencyData, i*size, (i+1)*size);
             averages[i] = averages[i]*(averageCount-3)/averageCount + rawValues[i]/averageCount*3 ;
             currentValues[i] = rawValues[i] - averages[i];
         }
-
-        /*currentValues[0] = sumArray(frequencyData, 0, 150);
-        currentValues[1] = sumArray(frequencyData, 150, 300);
-        currentValues[2] = sumArray(frequencyData, 300, 450);
-        currentValues[3] = sumArray(frequencyData, 450, 600);*/
 
         for (var i = 0; i < 4; i++) {
             delta[i] = currentValues[i] - previousValues[i];
         }
     }
-
-    /*function spawnArrows() {
-        var spawnCount = 0;
-        currentProcessOrder = (currentProcessOrder + 1) % 2;
-        for (var x = 0; x < 4; x++) {
-            var i = processOrders[currentProcessOrder][x];
-            if ((spawnTimer[i] <= 0 && delta[i] > spawnThreshold) || (delta[i] > spawnThreshold*2 && reverseSpawnTimer[i] >= 20)) {
-                arrows.push(createElement('div', {
-                    innerHTML: arrowChars[i],
-                    keyCode: keyCodes[i],
-                    startTime: new Date()
-                }, {
-                    position: "absolute", fontSize: "100px", zIndex: 10,
-                    top: yStart + "px", left: xOffset + arrowX[i] + "px"
-                }));
-
-				var delay = parseInt(respawnConstant/delta[i]/2);
-                spawnTimer[i] = delay < defaultSpawnTimer ? delay : defaultSpawnTimer;
-                reverseSpawnTimer[i] = 0;
-
-                spawnCount++;
-                if (spawnCount == 2) {
-                    //If spawned 2 stop spawning and make sure no others spawn right after.
-                    for (var j = 0; j < 4; j++) {
-                        if (spawnTimer[j] < 10) spawnTimer[j] = 10;
-                        if (reverseSpawnTimer[j] >= 10) reverseSpawnTimer[j] = 10;
-                    }
-                    return;
-                }
-            } else {
-                spawnTimer[i] -= 1;
-                reverseSpawnTimer[i] += 1;
-            }
-        }
-        if (spawnCount == 1) {
-            //If spawned 2 stop spawning and make sure no others spawn right after.
-            for (var j = 0; j < 4; j++) {
-                if (spawnTimer[j] < 10) spawnTimer[j] = 10;
-                if (reverseSpawnTimer[j] >= 10) reverseSpawnTimer[j] = 10;
-            }
-            return;
-        }
-    }*/
 
     function spawnArrows() {
         var spawnCount = 0;
@@ -248,18 +197,6 @@ bandCampRevolution = function() {
                 continue;
             }
 
-            /*var threshholdMultiplier = 15/reverseSpawnTimer[i];
-            if (threshholdMultiplier < .5) {
-                threshholdMultiplier = .5;
-            }*/
-            /*if (threshholdMultiplier < 0) {
-                threshholdMultiplier = 0;
-            } else if (threshholdMultiplier < 1) {
-                threshholdMultiplier = 1;
-            }*/
-            //threshholdMultiplier = threshholdMultiplier < 1 ? 1 : threshholdMultiplier;
-
-            //if (delta[i] > spawnThreshold*threshholdMultiplier) {
             var threshold = (spawnThreshold/reverseSpawnTimer[i])*holdMultiplier*(1 + spawnCount);
             threshold = threshold < minThreshold ? minThreshold : threshold;
             if (delta[i] > threshold) {
@@ -286,17 +223,8 @@ bandCampRevolution = function() {
 
         if (spawnCount > 0) {
             holdMultiplier = maxHoldMultiplier;
-            /*
-            //If spawned 2 stop spawning and make sure no others spawn right after.
-            for (var j = 0; j < 4; j++) {
-                //if (reverseSpawnTimer[j] >= 0) reverseSpawnTimer[j] = -2;
-                reverseSpawnTimer[j] = -3;
-            }
-            */
-            //minThreshold += spawnCount * 7;
         } else if (holdMultiplier > 1) {
             holdMultiplier/=2;
-            //minThreshold--;
         }
     }
 
@@ -309,6 +237,8 @@ bandCampRevolution = function() {
                 actualFps = actualFps > fps ? fps : actualFps;
             }
             previousFrameTime = new Date();
+
+            restartDelay = (b.currentTime - a.currentTime) * 1000;
 
             if (!paused) {
                 analyseAudio();
@@ -329,7 +259,7 @@ bandCampRevolution = function() {
             for (var i = 0; i < 4; i++) {
                 if (e.keyCode == keyCodes[i]) {
                     e.preventDefault();
-                    for (var j = 0; j < (arrows.length < 4 ? arrows.length : 4); j++) {
+                    for (var j = 0; j < arrows.length; j++) {
                         var d = Math.abs(scoreArrowTop - parseInt(arrows[j].style.top));
                         if (arrows[j].keyCode == e.keyCode && d < scoreError + speed) {
                             score += (scoreError-d)*100;
