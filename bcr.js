@@ -1,6 +1,6 @@
-bandCampRevolution = function(restartDelay, respawnConstant) {
-    restartDelay = typeof restartDelay !== 'undefined' ?  restartDelay : 1800;
-    respawnConstant = typeof respawnConstant !== 'undefined' ? respawnConstant : 130000;
+bandCampRevolution = function() {
+    //restartDelay = typeof restartDelay !== 'undefined' ?  restartDelay : 1800;
+    //respawnConstant = typeof respawnConstant !== 'undefined' ? respawnConstant : 75000;
 
     //Dimensions
     var xOffset = (screen.width - 500)/2;
@@ -16,19 +16,32 @@ bandCampRevolution = function(restartDelay, respawnConstant) {
     var frequencyData = null;
     var previousValues = [0,0,0,0];
     var currentValues = [0,0,0,0];
+    var rawValues = [0,0,0,0];
     var delta = [0,0,0,0];
+    var averages = [0, 0, 0, 0];
+    var averageCount = 0;
 
-    var spawnTimer = [500,500,500,500];
+    var spawnTimer = [200,300,300,200];
+    var reverseSpawnTimer = [-100,-100,-100,-100];
     var arrowChars = ["☜", "☟", "☝", "☞"];
     var keyCodes = [37, 40, 38, 39];
-    var fps = 60;
-    var actualFps = 60;
-    var speed = distance/(restartDelay/1000*fps);
+    var fps = 240;
+    actualFps = 120;
+    
     var score = 0;
     var scoreError = 75; //How much error there is on timing the button presses.
     var previousFrameTime = null;
-    var spawnThreshold = 800;
+    //var spawnThreshold = 1200;
+    
+    
     var paused = false;
+	//var defaultSpawnTimer = respawnConstant/1500;
+    var processOrders = [
+        [1, 0, 3, 2],
+        [2, 3, 0, 1]
+    ];
+    var currentProcessOrder = 0;
+    var holdMultiplier = 1;
 
     //Audio elements
     var a = null;
@@ -40,6 +53,27 @@ bandCampRevolution = function(restartDelay, respawnConstant) {
     var scoreArrows = [];
     var arrows = [];
 
+
+    var spawnThreshold;
+    var maxHoldMultiplier;
+    var restartDelay;
+
+    var difficulty = 2;
+    if (difficulty == 1) {
+        spawnThreshold = 30000;
+        maxHoldMultiplier = Math.pow(2, 24);//2526;
+        restartDelay = 1800;
+        //maxDelay = 20;
+    }
+    if (difficulty == 2) {
+        spawnThreshold = 22000;
+        maxHoldMultiplier = Math.pow(2, 18);//2526;
+        restartDelay = 1200;
+        //maxDelay = 20;
+    }
+
+    var minThreshold = spawnThreshold/20;
+    var speed = distance/(restartDelay/1000*fps);
 
 
     function restartA() {
@@ -89,10 +123,11 @@ bandCampRevolution = function(restartDelay, respawnConstant) {
     }
 
     function getRandomColor() {
-        var letters = '0123456789ABCDEF'.split('');
+        //var letters = '0123456789ABCDEF'.split('');
+        var letters = '789ABCDEF'.split('');
         var color = '#';
         for (var i = 0; i < 6; i++ ) {
-            color += letters[Math.floor(Math.random() * 16)];
+            color += letters[Math.floor(Math.random() * 9)];
         }
         return color;
     }
@@ -137,10 +172,17 @@ bandCampRevolution = function(restartDelay, respawnConstant) {
             previousValues[i] = currentValues[i];
         }
         
-        currentValues[0] = sumArray(frequencyData, 0, 200);
-        currentValues[1] = sumArray(frequencyData, 200, 400);
-        currentValues[2] = sumArray(frequencyData, 400, 600);
-        currentValues[3] = sumArray(frequencyData, 600, 800);
+        rawValues[0] = sumArray(frequencyData, 0, 200);
+        rawValues[1] = sumArray(frequencyData, 200, 400);
+        rawValues[2] = sumArray(frequencyData, 400, 600);
+        rawValues[3] = sumArray(frequencyData, 600, 800);
+
+        averageCount++;
+
+        for (var i = 0; i < 4; i++) {
+            averages[i] = averages[i]*(averageCount-3)/averageCount + rawValues[i]/averageCount*3 ;
+            currentValues[i] = rawValues[i] - averages[i];
+        }
 
         /*currentValues[0] = sumArray(frequencyData, 0, 150);
         currentValues[1] = sumArray(frequencyData, 150, 300);
@@ -152,9 +194,12 @@ bandCampRevolution = function(restartDelay, respawnConstant) {
         }
     }
 
-    function spawnArrows() {
-        for (var i = 0; i < 4; i++) {
-            if (spawnTimer[i] == 0 && delta[i] > spawnThreshold) {
+    /*function spawnArrows() {
+        var spawnCount = 0;
+        currentProcessOrder = (currentProcessOrder + 1) % 2;
+        for (var x = 0; x < 4; x++) {
+            var i = processOrders[currentProcessOrder][x];
+            if ((spawnTimer[i] <= 0 && delta[i] > spawnThreshold) || (delta[i] > spawnThreshold*2 && reverseSpawnTimer[i] >= 20)) {
                 arrows.push(createElement('div', {
                     innerHTML: arrowChars[i],
                     keyCode: keyCodes[i],
@@ -164,10 +209,94 @@ bandCampRevolution = function(restartDelay, respawnConstant) {
                     top: yStart + "px", left: xOffset + arrowX[i] + "px"
                 }));
 
-                spawnTimer[i] = parseInt(respawnConstant/delta[i]);
-            } else if (spawnTimer[i] > 0) {
+				var delay = parseInt(respawnConstant/delta[i]/2);
+                spawnTimer[i] = delay < defaultSpawnTimer ? delay : defaultSpawnTimer;
+                reverseSpawnTimer[i] = 0;
+
+                spawnCount++;
+                if (spawnCount == 2) {
+                    //If spawned 2 stop spawning and make sure no others spawn right after.
+                    for (var j = 0; j < 4; j++) {
+                        if (spawnTimer[j] < 10) spawnTimer[j] = 10;
+                        if (reverseSpawnTimer[j] >= 10) reverseSpawnTimer[j] = 10;
+                    }
+                    return;
+                }
+            } else {
                 spawnTimer[i] -= 1;
+                reverseSpawnTimer[i] += 1;
             }
+        }
+        if (spawnCount == 1) {
+            //If spawned 2 stop spawning and make sure no others spawn right after.
+            for (var j = 0; j < 4; j++) {
+                if (spawnTimer[j] < 10) spawnTimer[j] = 10;
+                if (reverseSpawnTimer[j] >= 10) reverseSpawnTimer[j] = 10;
+            }
+            return;
+        }
+    }*/
+
+    function spawnArrows() {
+        var spawnCount = 0;
+        currentProcessOrder = (currentProcessOrder + 1) % 2;
+        for (var x = 0; x < 4; x++) {
+            var i = processOrders[currentProcessOrder][x];
+
+            if (reverseSpawnTimer[i] < 1) {
+                reverseSpawnTimer[i]++;
+                continue;
+            }
+
+            /*var threshholdMultiplier = 15/reverseSpawnTimer[i];
+            if (threshholdMultiplier < .5) {
+                threshholdMultiplier = .5;
+            }*/
+            /*if (threshholdMultiplier < 0) {
+                threshholdMultiplier = 0;
+            } else if (threshholdMultiplier < 1) {
+                threshholdMultiplier = 1;
+            }*/
+            //threshholdMultiplier = threshholdMultiplier < 1 ? 1 : threshholdMultiplier;
+
+            //if (delta[i] > spawnThreshold*threshholdMultiplier) {
+            var threshold = (spawnThreshold/reverseSpawnTimer[i])*holdMultiplier*(1 + spawnCount);
+            threshold = threshold < minThreshold ? minThreshold : threshold;
+            if (delta[i] > threshold) {
+                arrows.push(createElement('div', {
+                    innerHTML: arrowChars[i],
+                    keyCode: keyCodes[i],
+                    startTime: new Date()
+                }, {
+                    position: "absolute", fontSize: "100px", zIndex: 10,
+                    top: yStart + "px", left: xOffset + arrowX[i] + "px"
+                }));
+
+                reverseSpawnTimer[i] = -4;
+
+                spawnCount++;
+                if (spawnCount == 2) {
+                    break;
+                }
+
+            } else {
+                reverseSpawnTimer[i] += 1;
+            }
+        }
+
+        if (spawnCount > 0) {
+            holdMultiplier = maxHoldMultiplier;
+            /*
+            //If spawned 2 stop spawning and make sure no others spawn right after.
+            for (var j = 0; j < 4; j++) {
+                //if (reverseSpawnTimer[j] >= 0) reverseSpawnTimer[j] = -2;
+                reverseSpawnTimer[j] = -3;
+            }
+            */
+            //minThreshold += spawnCount * 7;
+        } else if (holdMultiplier > 1) {
+            holdMultiplier/=2;
+            //minThreshold--;
         }
     }
 
@@ -200,7 +329,7 @@ bandCampRevolution = function(restartDelay, respawnConstant) {
             for (var i = 0; i < 4; i++) {
                 if (e.keyCode == keyCodes[i]) {
                     e.preventDefault();
-                    for (var j = 0; j < arrows.length; j++) {
+                    for (var j = 0; j < (arrows.length < 4 ? arrows.length : 4); j++) {
                         var d = Math.abs(scoreArrowTop - parseInt(arrows[j].style.top));
                         if (arrows[j].keyCode == e.keyCode && d < scoreError + speed) {
                             score += (scoreError-d)*100;
