@@ -1,36 +1,49 @@
 bandCampRevolution = function(restartDelay, respawnConstant) {
 	restartDelay = typeof restartDelay !== 'undefined' ?  restartDelay : 1800;
 	respawnConstant = typeof respawnConstant !== 'undefined' ? respawnConstant : 130000;
+
+	//Dimensions
+	var xOffset = (screen.width - 500)/2;
+	var scoreArrowTop = 150;
+	var yStart = screen.height;
+	var distance = yStart - scoreArrowTop;
+	var arrowX = [0, 125, 250, 375];
 	
-	var loaded = false;
-	var first = true;
-	var m = document.getElementsByClassName('middleColumn')[0];
-	var arrows = [];
-	var scoreArrows = [];
-	var scoreArrowColor = "#FFFFFF";
+	//Audio analysis 
+	var ctx = null;
+	var audioSrc = null;
+	var analyser = null;
+	var frequencyData = null;
 	var previousValues = [0,0,0,0];
 	var currentValues = [0,0,0,0];
 	var delta = [0,0,0,0];
-	var spawnTimer = [0,100,0,100];
+
+	var spawnTimer = [500,500,500,500];
 	var arrowChars = ["☜", "☟", "☝", "☞"];
 	var keyCodes = [37, 40, 38, 39];
-	var arrowX = [0, 125, 250, 375];
-	var xOffset = (screen.width - 500)/2;
-	var processOrder = [0, 2, 1, 3];
-	var scoreArrowTop = 150;
 	var fps = 60;
 	var actualFps = 60;
-	var yStart = screen.height;
-	var distance = yStart - scoreArrowTop;
 	var speed = distance/(restartDelay/1000*fps);
 	var score = 0;
-	var scoreElem = null;
+	var scoreError = 75; //How much error there is on timing the button presses.
 	var previousFrameTime = null;
+	var spawnThreshold = 800;
+
+	//Audio elements
+	var a = null;
+	var b = null;
+
+	//Game Elements
+	var scoreElem = null;
+	var cover = null;
+	var scoreArrows = [];
+	var arrows = [];
 
 	function restartA() {
 		a.currentTime = 0;
 		if (b.currentTime * 1000 >= restartDelay) {
 			a.play();
+			restartDelay = (b.currentTime - a.currentTime) * 1000;
 		} else {
 			setTimeout(restartA, 4);
 			restartDelay = (b.currentTime - a.currentTime) * 1000;
@@ -49,15 +62,21 @@ bandCampRevolution = function(restartDelay, respawnConstant) {
 		speed = distance/(restartDelay/1000*actualFps);
 		
 		for (var i = 0; i < arrows.length; i++) {
-			arrows[i].style.top = (parseInt(arrows[i].style.top) - speed) + "px";
+			var arrow = arrows[i];
+			var currentY = parseInt(arrow.style.top);
+			var remainingDistance = currentY - scoreArrowTop;
+			var remainingTime = restartDelay - ((new Date()) - arrow.startTime);
+			var aspeed = remainingDistance <= 0 || remainingTime <= 0 ? speed : 1000*remainingDistance/remainingTime/actualFps;
+
+			arrow.style.top = currentY - aspeed + "px";
 			
-			/*if (arrows[i].startTime && parseInt(arrows[i].style.top) < scoreArrowTop) {
-				console.log( restartDelay - ((new Date()) - arrows[i].startTime));
-				arrows[i].startTime = null;
-			}*/
+			if (arrow.startTime && remainingDistance <= 0) {
+				console.log(remainingTime);
+				arrow.startTime = null;
+			}
 			
-			if (parseInt(arrows[i].style.top) < -100) {
-				document.body.removeChild(arrows[i]);
+			if (currentY < -100) {
+				document.body.removeChild(arrow);
 				arrows.splice(i,1);
 				score -= 10000;
 				scoreElem.innerHTML = score;
@@ -81,12 +100,6 @@ bandCampRevolution = function(restartDelay, respawnConstant) {
 			arrows[i].style.color = c;
 		}
 		
-		if (scoreArrowColor == "#FFFFFF") {
-			scoreArrowColor = "#000000";
-		} else {
-			scoreArrowColor = "#FFFFFF";
-		}
-		
 		for (var i = 0; i < scoreArrows.length; i++) {
 			scoreArrows[i].style.color = c;
 		}
@@ -97,143 +110,160 @@ bandCampRevolution = function(restartDelay, respawnConstant) {
 	function pauseA() {
 		a.pause();
 		b = a.cloneNode();
-		loaded = true;
 		b.currentTime = 0;
 		b.volume = 1;
 		b.play();
-		console.log(a.paused, b.paused);
 		setTimeout(restartA, restartDelay);
 		
-		var ctx = new AudioContext();
-		var audioSrc = ctx.createMediaElementSource(b);
-		var analyser = ctx.createAnalyser();
-		
+		ctx = new AudioContext();
+		audioSrc = ctx.createMediaElementSource(b);
+		analyser = ctx.createAnalyser();
 		audioSrc.connect(analyser);
 		
-		var frequencyData = new Uint8Array(analyser.frequencyBinCount);
+		frequencyData = new Uint8Array(analyser.frequencyBinCount);
 		
-		function renderFrame() {
-			setTimeout(function() {
-				if (previousFrameTime) {
-					actualFps = 1000/((new Date()) - previousFrameTime);
-					actualFps = actualFps > fps ? fps : actualFps;
-				}
-				previousFrameTime = new Date();
-				
-				requestAnimationFrame(renderFrame);
-				analyser.getByteFrequencyData(frequencyData);
-				if (first) {
-					first = false;
-					console.log(frequencyData);
-				}
-				
-				for (var i = 0; i < 4; i++) {
-					previousValues[i] = currentValues[i];
-				}
-				
-				currentValues[0] = sumArray(frequencyData, 0, 200);
-				currentValues[1] = sumArray(frequencyData, 200, 400);
-				currentValues[2] = sumArray(frequencyData, 400, 600);
-				currentValues[3] = sumArray(frequencyData, 600, 800);
-				
-				for (var i = 0; i < 4; i++) {
-					delta[i] = currentValues[i] - previousValues[i];
-				}
-				
-				for (var i = 0; i < 4; i++) {
-					if (spawnTimer[i] == 0 && delta[i] > 1000) {
-						var arrow = document.createElement('div');
-						arrow.innerHTML = arrowChars[i];
-						arrow.style.fontSize = "100px";
-						arrow.style.position = "absolute";
-						arrow.style.top = yStart + "px";
-						arrow.style.left = xOffset + arrowX[i] + "px";
-						arrow.keyCode = keyCodes[i];
-						arrow.startTime = new Date();
-						arrow.style.zIndex = 10;
-						document.body.appendChild(arrow);
-						arrows.push(arrow);
-						spawnTimer[i] = parseInt(respawnConstant/delta[i]);
-					} else if (spawnTimer[i] > 0) {
-						spawnTimer[i] -= 1;
-					}
-				}
-				
-				moveArrows();
-			}, 1000/fps);
+		document.addEventListener('keydown', keyHandler);
+
+		loop();
+	}
+
+	function analyseAudio() {
+		analyser.getByteFrequencyData(frequencyData);
+			
+		for (var i = 0; i < 4; i++) {
+			previousValues[i] = currentValues[i];
 		}
 		
-		renderFrame();
-		
-		document.addEventListener('keydown', function(e) {
-			for (var i = 0; i < 4; i++) {
-				if (e.keyCode == keyCodes[i]) {
-					e.preventDefault();
-					for (var j = 0; j < arrows.length; j++) {
-						var d = Math.abs(scoreArrowTop - parseInt(arrows[j].style.top));
-						if (arrows[j].keyCode == e.keyCode && d < 75 + speed) {
-							score += (75-d)*100;
-							scoreElem.innerHTML = score;
-							scoreElem.style.color = "green";
-							document.body.removeChild(arrows[j]);
-							arrows.splice(j,1);
-							return;
-						}
+		currentValues[0] = sumArray(frequencyData, 0, 200);
+		currentValues[1] = sumArray(frequencyData, 200, 400);
+		currentValues[2] = sumArray(frequencyData, 400, 600);
+		currentValues[3] = sumArray(frequencyData, 600, 800);
+
+		/*currentValues[0] = sumArray(frequencyData, 0, 150);
+		currentValues[1] = sumArray(frequencyData, 150, 300);
+		currentValues[2] = sumArray(frequencyData, 300, 450);
+		currentValues[3] = sumArray(frequencyData, 450, 600);*/
+
+		for (var i = 0; i < 4; i++) {
+			delta[i] = currentValues[i] - previousValues[i];
+		}
+	}
+
+	function spawnArrows() {
+		for (var i = 0; i < 4; i++) {
+			if (spawnTimer[i] == 0 && delta[i] > spawnThreshold) {
+				arrows.push(createElement('div', {
+					innerHTML: arrowChars[i],
+					keyCode: keyCodes[i],
+					startTime: new Date()
+				}, {
+					position: "absolute", fontSize: "100px", zIndex: 10,
+					top: yStart + "px", left: xOffset + arrowX[i] + "px"
+				}));
+
+				spawnTimer[i] = parseInt(respawnConstant/delta[i]);
+			} else if (spawnTimer[i] > 0) {
+				spawnTimer[i] -= 1;
+			}
+		}
+	}
+
+	function loop() {
+		setTimeout(function() {
+			requestAnimationFrame(loop);
+
+			if (previousFrameTime) {
+				actualFps = 1000/((new Date()) - previousFrameTime);
+				actualFps = actualFps > fps ? fps : actualFps;
+			}
+			previousFrameTime = new Date();
+			
+			analyseAudio();
+			moveArrows();
+			spawnArrows();
+
+		}, 1000/fps);
+	}
+
+	function keyHandler(e) {
+		for (var i = 0; i < 4; i++) {
+			if (e.keyCode == keyCodes[i]) {
+				e.preventDefault();
+				for (var j = 0; j < arrows.length; j++) {
+					var d = Math.abs(scoreArrowTop - parseInt(arrows[j].style.top));
+					if (arrows[j].keyCode == e.keyCode && d < scoreError + speed) {
+						score += (scoreError-d)*100;
+						scoreElem.innerHTML = score;
+						scoreElem.style.color = "green";
+						document.body.removeChild(arrows[j]);
+						arrows.splice(j,1);
+						return;
 					}
 				}
+
+				//If a key was pressed incorrectly
+				score -= 5000;
+				scoreElem.innerHTML = score;
+				scoreElem.style.color = "red";
 			}
-			score -= 5000;
-			scoreElem.innerHTML = score;
-			scoreElem.style.color = "red";
-		});
+		}
 	}
 
 	function createScoreArrows() {
 		for (var i = 0; i < 4; i++) {
-			var arrow = document.createElement('div');
-			arrow.innerHTML = arrowChars[i];
-			arrow.style.fontSize = "100px";
-			arrow.style.position = "absolute";
-			arrow.style.top = scoreArrowTop + "px";
-			arrow.style.left = xOffset + arrowX[i] + "px";
-			arrow.style.zIndex = 10;
-			document.body.appendChild(arrow);
-			scoreArrows.push(arrow);
+			scoreArrows.push(createElement('div', {innerHTML: arrowChars[i]}, {
+				position: "absolute", fontSize: "100px", zIndex: 10,
+				top: scoreArrowTop + "px", left: xOffset + arrowX[i] + "px"
+			}));
 		}
 	}
 
+	function createElement(type, properties, style) {
+		var e = document.createElement(type);
+
+		for (var k in properties) {
+			e[k] = properties[k];
+		}
+
+		for (var k in style) {
+			e.style[k] = style[k];
+		}
+
+		document.body.appendChild(e);
+
+		return e;
+	}
+
+	//Set up the game once the audio starts playing
+	function setUpGame() {
+		scoreElem = createElement('center', {innerHTML: 0}, {
+			position: "absolute", width: "500px", fontSize: "60px",
+			fontFamily: "Lucida Console", top: scoreArrowTop - 100 + "px",
+			left: xOffset + "px", zIndex: 10
+		});
+
+		cover = createElement('div', {}, {
+			position: "absolute", width: screen.width + "px",
+			height: screen.height + "px", opacity: .7, top: "0px",
+			backgroundColor: "#000000"
+		});
+		
+		createScoreArrows();
+
+		setInterval(changeArrowColor, 400);
+		setTimeout(pauseA, 4);
+	}
+
 	function checkLoaded(){
-		if (!loaded) {
+		//if (!loaded) {
 			a = document.getElementsByTagName('audio')[0];
 			if (a.src) {
-				
-				scoreElem = document.createElement('center');
-				scoreElem.innerHTML = 0;
-				scoreElem.style.position = "absolute";
-				scoreElem.style.width = "500px";
-				scoreElem.style.fontSize = "60px";
-				scoreElem.style.fontFamily = "Lucida Console";
-				scoreElem.style.top = scoreArrowTop - 100 + "px";
-				scoreElem.style.left = xOffset + "px";
-				scoreElem.style.zIndex = 10;
-				document.body.appendChild(scoreElem);
-				
-				var cover = document.createElement('div');
-				cover.style.position = "absolute";
-				cover.style.width = screen.width + "px";
-				cover.style.height = screen.height + "px";
-				cover.style.opacity = .7;
-				cover.style.top = "0px";
-				cover.style.backgroundColor = "black";
-				document.body.appendChild(cover);
-				
-				createScoreArrows();
-				setInterval(changeArrowColor, 400);
-				setTimeout(pauseA, 1000);
+				setUpGame();
 			} else {
-				setTimeout(checkLoaded, 50);
+				setTimeout(checkLoaded, 4);
 			}
-		}
+		//}
 	}
-	setTimeout(checkLoaded, 50);
+
+	setTimeout(checkLoaded, 4);
 };
