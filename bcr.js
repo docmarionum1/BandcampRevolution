@@ -4,18 +4,23 @@ bandCampRevolution = function(difficulty) {
     var spawnThreshold;
     var maxHoldMultiplier;
     var restartDelay;
-    if (difficulty == 1) {
+    if (difficulty == 0) {
         spawnThreshold = 30000;
-        maxHoldMultiplier = Math.pow(2, 24);
+        maxHoldMultiplier = Math.pow(2, 20);
+        restartDelay = 2200;
+    }
+    if (difficulty == 1) {
+        spawnThreshold = 24000;
+        maxHoldMultiplier = Math.pow(2, 20);
         restartDelay = 1800;
     }
     if (difficulty == 2) {
-        spawnThreshold = 22000;
+        spawnThreshold = 20000;
         maxHoldMultiplier = Math.pow(2, 16);
         restartDelay = 1400;
     }
     if (difficulty == 3) {
-        spawnThreshold = 18000;
+        spawnThreshold = 16000;
         maxHoldMultiplier = Math.pow(2, 8);
         restartDelay = 1000;
     }
@@ -177,7 +182,8 @@ bandCampRevolution = function(difficulty) {
 
         for (var i = 0; i < 4; i++) {
             rawValues[i] = sumArray(frequencyData, i*size, (i+1)*size);
-            averages[i] = averages[i]*(averageCount-3)/averageCount + rawValues[i]/averageCount*3 ;
+            averages[i] = averages[i]*(averageCount-3)/averageCount + rawValues[i]/averageCount*3;
+            averages[i] = 4/5*averages[i] + 1/5*rawValues[i];
             currentValues[i] = rawValues[i] - averages[i];
         }
 
