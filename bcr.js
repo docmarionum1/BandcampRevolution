@@ -59,6 +59,8 @@ bandCampRevolution = function(difficulty) {
     var scoreError = 75; //How much error there is on timing the button presses.
     var previousFrameTime = null;
     var gameLoopTimeout = null;
+    var pollAudioSrcInterval = null;
+
     
     var paused = false;
     var processOrders = [
@@ -70,7 +72,8 @@ bandCampRevolution = function(difficulty) {
 
     //Audio elements
     a = null;
-    b = null;
+    var b = null;
+    var src = null;
 
     //Game Elements
     var scoreElem = null;
@@ -108,11 +111,6 @@ bandCampRevolution = function(difficulty) {
             var aspeed = remainingDistance <= 0 || remainingTime <= 0 ? speed : 1000*remainingDistance/remainingTime/actualFps;
 
             arrow.style.top = currentY - aspeed + "px";
-            
-            if (arrow.startTime && remainingDistance <= 0) {
-                console.log(remainingTime);
-                arrow.startTime = null;
-            }
             
             if (currentY < -100) {
                 document.body.removeChild(arrow);
@@ -167,6 +165,9 @@ bandCampRevolution = function(difficulty) {
         document.addEventListener('keyup', keyUpHandler);
 
         paused = false;
+
+        src = a.src;
+
         loop();
     }
 
@@ -295,10 +296,13 @@ bandCampRevolution = function(difficulty) {
         }
 
         if (e.keyCode == 27) { //ESC
+            clearTimeout(gameLoopTimeout);
+            clearInterval(pollAudioSrcInterval);
+
             document.body.removeChild(cover);
             document.body.removeChild(instructions);
             document.body.removeChild(scoreElem);
-            clearTimeout(gameLoopTimeout);
+
             for (var i = 0; i < scoreArrows.length; i++) {
                 document.body.removeChild(scoreArrows[i]);
             }
@@ -435,5 +439,12 @@ bandCampRevolution = function(difficulty) {
         }
     }
 
+    function pollForSongChange() {
+        if (src != a.src) {
+            resettingGame = true;
+        }
+    }
+
     setTimeout(checkLoaded, 4);
+    pollAudioSrcInterval = setInterval(pollForSongChange, 10)
 };
