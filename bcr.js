@@ -208,7 +208,7 @@ bandCampRevolution = function(difficulty) {
                     keyCode: keyCodes[i],
                     startTime: new Date()
                 }, {
-                    position: "absolute", fontSize: "100px", zIndex: 10,
+                    position: "fixed", fontSize: "100px", zIndex: 10,
                     top: yStart + "px", left: xOffset + arrowX[i] + "px"
                 }));
 
@@ -380,7 +380,7 @@ bandCampRevolution = function(difficulty) {
     function createScoreArrows() {
         for (var i = 0; i < 4; i++) {
             scoreArrows.push(createElement('div', {innerHTML: arrowChars[i]}, {
-                position: "absolute", fontSize: "100px", zIndex: 10,
+                position: "fixed", fontSize: "100px", zIndex: 10,
                 top: scoreArrowTop + "px", left: xOffset + arrowX[i] + "px"
             }));
         }
@@ -405,13 +405,13 @@ bandCampRevolution = function(difficulty) {
     //Set up the game once the audio starts playing
     function setUpGame() {
         scoreElem = createElement('center', {innerHTML: 0}, {
-            position: "absolute", width: "500px", fontSize: "60px",
+            position: "fixed", width: "500px", fontSize: "60px",
             fontFamily: "Lucida Console", top: scoreArrowTop - 100 + "px",
             left: xOffset + "px", zIndex: 10
         });
 
         cover = createElement('div', {}, {
-            position: "absolute", width: "100%",
+            position: "fixed", width: "100%",
             height: "100%", opacity: .7, top: "0px",
             backgroundColor: "#000000"
         });
@@ -419,7 +419,7 @@ bandCampRevolution = function(difficulty) {
         instructions = createElement('div', {
             innerHTML: "Control with Arrow Keys</br>Space to pause.</br>Enter to restart</br>Esc to quit.</br>"
         }, {
-            position: "absolute", top: "75px", left: "75px",
+            position: "fixed", top: "75px", left: "75px",
             fontSize: "20px", fontFamily: "Lucida Console"
         });
         
