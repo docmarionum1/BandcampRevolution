@@ -108,6 +108,7 @@ bandCampRevolution = function(difficulty) {
             var remainingDistance = currentY - scoreArrowTop;
             var remainingTime = actualRestartDelay - ((new Date()) - arrow.startTime);
             var aspeed = remainingDistance <= 0 || remainingTime <= 0 ? speed : 1000*remainingDistance/remainingTime/actualFps;
+            aspeed = aspeed > 2*speed ? speed : aspeed;
 
             arrow.style.top = currentY - aspeed + "px";
             
