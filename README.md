@@ -19,13 +19,16 @@ detection algorithm is really naive and needs work.
 
 When you click on the bookmarklet, this code is executed:
 
-    (function () { 
-  		var jsCode = document.createElement('script'); 
-  		jsCode.setAttribute('src', 'http://jeremyneiman.com/bcr/bcr.js');                  
-  		document.body.appendChild(jsCode);
-  		jsCode.onload = function() {bandCampRevolution();};
-  	})();
+    (function () {
+		if (window.bandCampRevolution) {
+			bandCampRevolution(1);
+		} else {
+			var cachebuster = Math.round(new Date().getTime() / 1); 
+			var jsCode = document.createElement('script'); 
+			jsCode.setAttribute('src', '//rawgit.com/docmarionum1/BandcampRevolution/master/bcr.js?cb=' + cachebuster);
+			document.body.appendChild(jsCode);
+			jsCode.onload = function() {bandCampRevolution(1);};
+		}
+	}());
   	
-`bandCampRevolution` is a function that takes two parameters, the first is the speed, 
-which defaults to 1400, and the second is a constant that affects how many arrows are generated, which defaults
-to 110000.  The "Hard Mode" bookmarklets uses `bandCampRevolution(1000, 80000)`
+`bandCampRevolution` is a function that takes a single parameter from 0 to 3 representing the difficulty. 1 is normal.
