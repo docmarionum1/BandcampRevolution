@@ -45,15 +45,15 @@ bandCampRevolution = function(difficulty) {
     var rawValues = [0,0,0,0];
     var delta = [0,0,0,0];
     var averages = [0, 0, 0, 0];
-    var averageCount = 0;
     var size = 200;
 
-    var reverseSpawnTimer = [-100,-100,-100,-100];
+    var initialTimers = [-100,-100,-100,-100]
+    var reverseSpawnTimer = initialTimers.slice(0);
     var arrowChars = ["☜", "☟", "☝", "☞"];
     var keyCodes = [37, 40, 38, 39];
     var fps = 240;
-    actualFps = 120;
-    
+    var actualFps = 120;
+    var resettingGame = false;
     var score = 0;
     var scoreError = 75; //How much error there is on timing the button presses.
     var previousFrameTime = null;
@@ -167,6 +167,7 @@ bandCampRevolution = function(difficulty) {
         document.addEventListener('keydown', keyDownHandler);
         document.addEventListener('keyup', keyUpHandler);
 
+        paused = false;
         loop();
     }
 
@@ -176,12 +177,6 @@ bandCampRevolution = function(difficulty) {
         for (var i = 0; i < 4; i++) {
             previousValues[i] = currentValues[i];
         }
-        
-
-        
-
-
-        averageCount++;
 
         for (var i = 0; i < 4; i++) {
             rawValues[i] = sumArray(frequencyData, i*size, (i+1)*size);
@@ -238,6 +233,11 @@ bandCampRevolution = function(difficulty) {
 
     function loop() {
         gameLoopTimeout = setTimeout(function() {
+            if (resettingGame) {
+                resetGame();
+                return;
+            }
+
             requestAnimationFrame(loop);
 
             if (previousFrameTime) {
@@ -257,6 +257,37 @@ bandCampRevolution = function(difficulty) {
         }, 1000/fps);
     }
 
+    function resetGame() {
+        reverseSpawnTimer = initialTimers.slice(0);
+        score = 0;
+        scoreElem.innerHTML = score;
+    
+        b.pause();
+        audioSrc.disconnect();
+        frequencyData = null;
+        audioSrc = null;
+        analyser = null
+        ctx = null;
+        b = null;
+
+        clearTimeout(gameLoopTimeout);
+
+        previousValues = [0,0,0,0];
+        currentValues = [0,0,0,0];
+        rawValues = [0,0,0,0];
+        delta = [0,0,0,0];
+        averages = [0, 0, 0, 0];
+        currentProcessOrder = 0;
+        holdMultiplier = 1;
+
+        for (var i = 0; i < arrows.length; i++) {
+            document.body.removeChild(arrows[i]);
+        }
+        arrows = [];
+        setTimeout(pauseA, 4);
+        resettingGame = false;
+    }
+
     function keyDownHandler(e) {
         if (e.keyCode == 32) {
             pauseUnpauseGame();
@@ -264,7 +295,7 @@ bandCampRevolution = function(difficulty) {
             return;
         }
 
-        if (e.keyCode == 27) {
+        if (e.keyCode == 27) { //ESC
             document.body.removeChild(cover);
             document.body.removeChild(instructions);
             document.body.removeChild(scoreElem);
@@ -277,6 +308,12 @@ bandCampRevolution = function(difficulty) {
             }
             document.removeEventListener('keydown', keyDownHandler);
             document.removeEventListener('keyup', keyUpHandler);
+            return;
+        }
+
+        if (e.keyCode == 13) { //Enter
+            resettingGame = true;
+            return;
         }
 
         if (!paused) {
@@ -378,7 +415,7 @@ bandCampRevolution = function(difficulty) {
         });
 
         instructions = createElement('div', {
-            innerHTML: "Control with Arrow Keys</br>Space to pause.</br>Esc to quit.</br>"
+            innerHTML: "Control with Arrow Keys</br>Space to pause.</br>Enter to restart</br>Esc to quit.</br>"
         }, {
             position: "absolute", top: "75px", left: "75px",
             fontSize: "20px", fontFamily: "Lucida Console"
