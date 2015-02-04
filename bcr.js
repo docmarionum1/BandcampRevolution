@@ -57,7 +57,7 @@ bandCampRevolution = function(difficulty) {
     var score = 0;
     var scoreError = 75; //How much error there is on timing the button presses.
     var previousFrameTime = null;
-    
+    var gameLoopTimeout = null;
     
     var paused = false;
     var processOrders = [
@@ -74,6 +74,7 @@ bandCampRevolution = function(difficulty) {
     //Game Elements
     var scoreElem = null;
     var cover = null;
+    var instructions = null;
     var scoreArrows = [];
     var arrows = [];
 
@@ -145,6 +146,7 @@ bandCampRevolution = function(difficulty) {
         }
         
         scoreElem.style.color = c;
+        instructions.style.color = c;
     }
 
     function pauseA() {
@@ -162,7 +164,8 @@ bandCampRevolution = function(difficulty) {
         
         frequencyData = new Uint8Array(analyser.frequencyBinCount);
         
-        document.addEventListener('keydown', keyHandler);
+        document.addEventListener('keydown', keyDownHandler);
+        document.addEventListener('keyup', keyUpHandler);
 
         loop();
     }
@@ -182,8 +185,7 @@ bandCampRevolution = function(difficulty) {
 
         for (var i = 0; i < 4; i++) {
             rawValues[i] = sumArray(frequencyData, i*size, (i+1)*size);
-            averages[i] = averages[i]*(averageCount-3)/averageCount + rawValues[i]/averageCount*3;
-            averages[i] = 4/5*averages[i] + 1/5*rawValues[i];
+            averages[i] = 9/10*averages[i] + 1/10*rawValues[i];
             currentValues[i] = rawValues[i] - averages[i];
         }
 
@@ -235,7 +237,7 @@ bandCampRevolution = function(difficulty) {
     }
 
     function loop() {
-        setTimeout(function() {
+        gameLoopTimeout = setTimeout(function() {
             requestAnimationFrame(loop);
 
             if (previousFrameTime) {
@@ -255,16 +257,37 @@ bandCampRevolution = function(difficulty) {
         }, 1000/fps);
     }
 
-    function keyHandler(e) {
+    function keyDownHandler(e) {
         if (e.keyCode == 32) {
             pauseUnpauseGame();
             e.preventDefault();
+            return;
+        }
+
+        if (e.keyCode == 27) {
+            document.body.removeChild(cover);
+            document.body.removeChild(instructions);
+            document.body.removeChild(scoreElem);
+            clearTimeout(gameLoopTimeout);
+            for (var i = 0; i < scoreArrows.length; i++) {
+                document.body.removeChild(scoreArrows[i]);
+            }
+            for (var i = 0; i < arrows.length; i++) {
+                document.body.removeChild(arrows[i]);
+            }
+            document.removeEventListener('keydown', keyDownHandler);
+            document.removeEventListener('keyup', keyUpHandler);
         }
 
         if (!paused) {
             for (var i = 0; i < 4; i++) {
                 if (e.keyCode == keyCodes[i]) {
                     e.preventDefault();
+
+                    scoreArrows[i].style.textShadow = "0px 0px 5px #FFF";
+                    scoreArrows[i].style.fontSize = "110px";
+                    scoreArrows[i].style.margin = "-5px 0px 0px -5px";
+
                     for (var j = 0; j < arrows.length; j++) {
                         var d = Math.abs(scoreArrowTop - parseInt(arrows[j].style.top));
                         if (arrows[j].keyCode == e.keyCode && d < scoreError + speed) {
@@ -281,6 +304,23 @@ bandCampRevolution = function(difficulty) {
                     score -= 5000;
                     scoreElem.innerHTML = score;
                     scoreElem.style.color = "red";
+                }
+            }
+        }
+    }
+
+    function keyUpHandler(e) {
+        if (e.keyCode == 32) {
+            e.preventDefault();
+        }
+
+        if (!paused) {
+            for (var i = 0; i < 4; i++) {
+                if (e.keyCode == keyCodes[i]) {
+                    e.preventDefault();
+                    scoreArrows[i].style.textShadow = "";
+                    scoreArrows[i].style.fontSize = "100px";
+                    scoreArrows[i].style.margin = "0px 0px 0px 0px";
                 }
             }
         }
@@ -333,8 +373,15 @@ bandCampRevolution = function(difficulty) {
 
         cover = createElement('div', {}, {
             position: "absolute", width: "100%",
-            height: screen.height + "px", opacity: .7, top: "0px",
+            height: "100%", opacity: .7, top: "0px",
             backgroundColor: "#000000"
+        });
+
+        instructions = createElement('div', {
+            innerHTML: "Control with Arrow Keys</br>Space to pause.</br>Esc to quit.</br>"
+        }, {
+            position: "absolute", top: "75px", left: "75px",
+            fontSize: "20px", fontFamily: "Lucida Console"
         });
         
         createScoreArrows();
