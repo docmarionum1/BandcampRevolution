@@ -27,6 +27,7 @@ bandCampRevolution = function(difficulty) {
 
     var minThreshold = spawnThreshold/20;
     var speed = distance/(restartDelay/1000*fps);
+    var actualRestartDelay = restartDelay;
 
     //Dimensions
     var xOffset = (screen.width - 500)/2;
@@ -83,10 +84,8 @@ bandCampRevolution = function(difficulty) {
         a.currentTime = 0;
         if (b.currentTime * 1000 >= restartDelay) {
             a.play();
-            restartDelay = (b.currentTime - a.currentTime) * 1000;
         } else {
             setTimeout(restartA, 4);
-            restartDelay = (b.currentTime - a.currentTime) * 1000;
         }
     }
 
@@ -99,13 +98,13 @@ bandCampRevolution = function(difficulty) {
     }
 
     function moveArrows() {
-        speed = distance/(restartDelay/1000*actualFps);
+        speed = distance/(actualRestartDelay/1000*actualFps);
         
         for (var i = 0; i < arrows.length; i++) {
             var arrow = arrows[i];
             var currentY = parseInt(arrow.style.top);
             var remainingDistance = currentY - scoreArrowTop;
-            var remainingTime = restartDelay - ((new Date()) - arrow.startTime);
+            var remainingTime = actualRestartDelay - ((new Date()) - arrow.startTime);
             var aspeed = remainingDistance <= 0 || remainingTime <= 0 ? speed : 1000*remainingDistance/remainingTime/actualFps;
 
             arrow.style.top = currentY - aspeed + "px";
@@ -246,7 +245,7 @@ bandCampRevolution = function(difficulty) {
             }
             previousFrameTime = new Date();
 
-            restartDelay = (b.currentTime - a.currentTime) * 1000;
+            actualRestartDelay = (b.currentTime - a.currentTime) * 1000;
 
             if (!paused) {
                 analyseAudio();
@@ -428,14 +427,12 @@ bandCampRevolution = function(difficulty) {
     }
 
     function checkLoaded(){
-        //if (!loaded) {
-            a = document.getElementsByTagName('audio')[0];
-            if (a.src) {
-                setUpGame();
-            } else {
-                setTimeout(checkLoaded, 4);
-            }
-        //}
+        a = document.getElementsByTagName('audio')[0];
+        if (a.src) {
+            setUpGame();
+        } else {
+            setTimeout(checkLoaded, 4);
+        }
     }
 
     setTimeout(checkLoaded, 4);
