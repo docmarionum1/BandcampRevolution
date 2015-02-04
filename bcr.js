@@ -59,7 +59,6 @@ bandCampRevolution = function(difficulty) {
     var scoreError = 75; //How much error there is on timing the button presses.
     var previousFrameTime = null;
     var gameLoopTimeout = null;
-    var pollAudioSrcInterval = null;
 
     
     var paused = false;
@@ -71,7 +70,7 @@ bandCampRevolution = function(difficulty) {
     var holdMultiplier = 1;
 
     //Audio elements
-    a = null;
+    var a = null;
     var b = null;
     var src = null;
 
@@ -233,7 +232,7 @@ bandCampRevolution = function(difficulty) {
 
     function loop() {
         gameLoopTimeout = setTimeout(function() {
-            if (resettingGame) {
+            if (resettingGame || src != a.src) {
                 resetGame();
                 return;
             }
@@ -297,7 +296,6 @@ bandCampRevolution = function(difficulty) {
 
         if (e.keyCode == 27) { //ESC
             clearTimeout(gameLoopTimeout);
-            clearInterval(pollAudioSrcInterval);
 
             document.body.removeChild(cover);
             document.body.removeChild(instructions);
@@ -439,12 +437,5 @@ bandCampRevolution = function(difficulty) {
         }
     }
 
-    function pollForSongChange() {
-        if (src != a.src) {
-            resettingGame = true;
-        }
-    }
-
     setTimeout(checkLoaded, 4);
-    pollAudioSrcInterval = setInterval(pollForSongChange, 10)
 };
