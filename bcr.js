@@ -1,4 +1,4 @@
-bandCampRevolution = function(difficulty) {
+bandCampRevolution = function (difficulty) {
     difficulty = difficulty !== 'undefined' ? difficulty : 1;
 
     var spawnThreshold;
@@ -25,32 +25,32 @@ bandCampRevolution = function(difficulty) {
         restartDelay = 1000;
     }
 
-    var minThreshold = spawnThreshold/20;
-    var speed = distance/(restartDelay/1000*fps);
+    var minThreshold = spawnThreshold / 20;
+    var speed = distance / (restartDelay / 1000 * fps);
     var actualRestartDelay = restartDelay;
 
     //Dimensions
-    var xOffset = (screen.width - 500)/2;
+    var xOffset = (screen.width - 500) / 2;
     var scoreArrowTop = 150;
     var yStart = screen.height;
     var distance = yStart - scoreArrowTop;
     var arrowX = [0, 125, 250, 375];
-    
+
     //Audio analysis 
     var ctx = null;
     var audioSrc = null;
     var analyser = null;
     var frequencyData = null;
-    var previousValues = [0,0,0,0];
-    var currentValues = [0,0,0,0];
-    var rawValues = [0,0,0,0];
-    var delta = [0,0,0,0];
+    var previousValues = [0, 0, 0, 0];
+    var currentValues = [0, 0, 0, 0];
+    var rawValues = [0, 0, 0, 0];
+    var delta = [0, 0, 0, 0];
     var averages = [0, 0, 0, 0];
     var size = 200;
 
-    var initialTimers = [-100,-100,-100,-100]
+    var initialTimers = [-100, -100, -100, -100]
     var reverseSpawnTimer = initialTimers.slice(0);
-    var arrowChars = ["☜", "☟", "☝", "☞"];
+    var arrowChars = ["☜", "☟", "☝︎", "☞"];
     var keyCodes = [37, 40, 38, 39];
     var fps = 240;
     var actualFps = 120;
@@ -60,7 +60,7 @@ bandCampRevolution = function(difficulty) {
     var previousFrameTime = null;
     var gameLoopTimeout = null;
 
-    
+
     var paused = false;
     var processOrders = [
         [1, 0, 3, 2],
@@ -100,21 +100,21 @@ bandCampRevolution = function(difficulty) {
     }
 
     function moveArrows() {
-        speed = distance/(actualRestartDelay/1000*actualFps);
-        
+        speed = distance / (actualRestartDelay / 1000 * actualFps);
+
         for (var i = 0; i < arrows.length; i++) {
             var arrow = arrows[i];
             var currentY = parseInt(arrow.style.top);
             var remainingDistance = currentY - scoreArrowTop;
             var remainingTime = actualRestartDelay - ((new Date()) - arrow.startTime);
-            var aspeed = remainingDistance <= 0 || remainingTime <= 0 ? speed : 1000*remainingDistance/remainingTime/actualFps;
-            aspeed = aspeed > 2*speed ? speed : aspeed;
+            var aspeed = remainingDistance <= 0 || remainingTime <= 0 ? speed : 1000 * remainingDistance / remainingTime / actualFps;
+            aspeed = aspeed > 2 * speed ? speed : aspeed;
 
             arrow.style.top = currentY - aspeed + "px";
-            
+
             if (currentY < -100) {
                 document.body.removeChild(arrow);
-                arrows.splice(i,1);
+                arrows.splice(i, 1);
                 score -= 10000;
                 scoreElem.innerHTML = score;
                 scoreElem.style.color = "red";
@@ -126,7 +126,7 @@ bandCampRevolution = function(difficulty) {
         //var letters = '0123456789ABCDEF'.split('');
         var letters = '789ABCDEF'.split('');
         var color = '#';
-        for (var i = 0; i < 6; i++ ) {
+        for (var i = 0; i < 6; i++) {
             color += letters[Math.floor(Math.random() * 9)];
         }
         return color;
@@ -137,11 +137,11 @@ bandCampRevolution = function(difficulty) {
         for (var i = 0; i < arrows.length; i++) {
             arrows[i].style.color = c;
         }
-        
+
         for (var i = 0; i < scoreArrows.length; i++) {
             scoreArrows[i].style.color = c;
         }
-        
+
         scoreElem.style.color = c;
         instructions.style.color = c;
     }
@@ -153,14 +153,14 @@ bandCampRevolution = function(difficulty) {
         b.volume = 1;
         b.play();
         setTimeout(restartA, restartDelay);
-        
+
         ctx = new AudioContext();
         audioSrc = ctx.createMediaElementSource(b);
         analyser = ctx.createAnalyser();
         audioSrc.connect(analyser);
-        
+
         frequencyData = new Uint8Array(analyser.frequencyBinCount);
-        
+
         document.addEventListener('keydown', keyDownHandler);
         document.addEventListener('keyup', keyUpHandler);
 
@@ -173,14 +173,14 @@ bandCampRevolution = function(difficulty) {
 
     function analyseAudio() {
         analyser.getByteFrequencyData(frequencyData);
-            
+
         for (var i = 0; i < 4; i++) {
             previousValues[i] = currentValues[i];
         }
 
         for (var i = 0; i < 4; i++) {
-            rawValues[i] = sumArray(frequencyData, i*size, (i+1)*size);
-            averages[i] = 9/10*averages[i] + 1/10*rawValues[i];
+            rawValues[i] = sumArray(frequencyData, i * size, (i + 1) * size);
+            averages[i] = 9 / 10 * averages[i] + 1 / 10 * rawValues[i];
             currentValues[i] = rawValues[i] - averages[i];
         }
 
@@ -200,7 +200,7 @@ bandCampRevolution = function(difficulty) {
                 continue;
             }
 
-            var threshold = (spawnThreshold/reverseSpawnTimer[i])*holdMultiplier*(1 + spawnCount);
+            var threshold = (spawnThreshold / reverseSpawnTimer[i]) * holdMultiplier * (1 + spawnCount);
             threshold = threshold < minThreshold ? minThreshold : threshold;
             if (delta[i] > threshold) {
                 arrows.push(createElement('div', {
@@ -227,12 +227,12 @@ bandCampRevolution = function(difficulty) {
         if (spawnCount > 0) {
             holdMultiplier = maxHoldMultiplier;
         } else if (holdMultiplier > 1) {
-            holdMultiplier/=2;
+            holdMultiplier /= 2;
         }
     }
 
     function loop() {
-        gameLoopTimeout = setTimeout(function() {
+        gameLoopTimeout = setTimeout(function () {
             if (resettingGame || src != a.src) {
                 resetGame();
                 return;
@@ -241,7 +241,7 @@ bandCampRevolution = function(difficulty) {
             requestAnimationFrame(loop);
 
             if (previousFrameTime) {
-                actualFps = 1000/((new Date()) - previousFrameTime);
+                actualFps = 1000 / ((new Date()) - previousFrameTime);
                 actualFps = actualFps > fps ? fps : actualFps;
             }
             previousFrameTime = new Date();
@@ -254,14 +254,14 @@ bandCampRevolution = function(difficulty) {
                 spawnArrows();
             }
 
-        }, 1000/fps);
+        }, 1000 / fps);
     }
 
     function resetGame() {
         reverseSpawnTimer = initialTimers.slice(0);
         score = 0;
         scoreElem.innerHTML = score;
-    
+
         b.pause();
         audioSrc.disconnect();
         frequencyData = null;
@@ -272,10 +272,10 @@ bandCampRevolution = function(difficulty) {
 
         clearTimeout(gameLoopTimeout);
 
-        previousValues = [0,0,0,0];
-        currentValues = [0,0,0,0];
-        rawValues = [0,0,0,0];
-        delta = [0,0,0,0];
+        previousValues = [0, 0, 0, 0];
+        currentValues = [0, 0, 0, 0];
+        rawValues = [0, 0, 0, 0];
+        delta = [0, 0, 0, 0];
         averages = [0, 0, 0, 0];
         currentProcessOrder = 0;
         holdMultiplier = 1;
@@ -330,11 +330,11 @@ bandCampRevolution = function(difficulty) {
                     for (var j = 0; j < arrows.length; j++) {
                         var d = Math.abs(scoreArrowTop - parseInt(arrows[j].style.top));
                         if (arrows[j].keyCode == e.keyCode && d < scoreError + speed) {
-                            score += (scoreError-d)*100;
+                            score += (scoreError - d) * 100;
                             scoreElem.innerHTML = score;
                             scoreElem.style.color = "green";
                             document.body.removeChild(arrows[j]);
-                            arrows.splice(j,1);
+                            arrows.splice(j, 1);
                             return;
                         }
                     }
@@ -379,7 +379,7 @@ bandCampRevolution = function(difficulty) {
 
     function createScoreArrows() {
         for (var i = 0; i < 4; i++) {
-            scoreArrows.push(createElement('div', {innerHTML: arrowChars[i]}, {
+            scoreArrows.push(createElement('div', { innerHTML: arrowChars[i] }, {
                 position: "fixed", fontSize: "100px", zIndex: 10,
                 top: scoreArrowTop + "px", left: xOffset + arrowX[i] + "px"
             }));
@@ -404,7 +404,10 @@ bandCampRevolution = function(difficulty) {
 
     //Set up the game once the audio starts playing
     function setUpGame() {
-        scoreElem = createElement('center', {innerHTML: 0}, {
+        if (!a.src.startsWith("https://us-central1-toggl-295618.cloudfunctions.net/bcr") && !a.src.startsWith("http://localhost")) {
+            a.src = `https://us-central1-toggl-295618.cloudfunctions.net/bcr?url=${encodeURIComponent(a.src)}`;
+        }
+        scoreElem = createElement('center', { innerHTML: 0 }, {
             position: "fixed", width: "500px", fontSize: "60px",
             fontFamily: "Lucida Console", top: scoreArrowTop - 100 + "px",
             left: xOffset + "px", zIndex: 10
@@ -422,17 +425,20 @@ bandCampRevolution = function(difficulty) {
             position: "fixed", top: "75px", left: "75px",
             fontSize: "20px", fontFamily: "Lucida Console"
         });
-        
+
         createScoreArrows();
 
         setInterval(changeArrowColor, 400);
         setTimeout(pauseA, 4);
     }
 
-    function checkLoaded(){
+    function checkLoaded() {
         a = document.getElementsByTagName('audio')[0];
+        a.crossOrigin = "anonymous";
         if (a.src) {
-            setUpGame();
+            setTimeout(function () {
+                setUpGame();
+            }, 1000);
         } else {
             setTimeout(checkLoaded, 4);
         }
