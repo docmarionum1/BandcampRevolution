@@ -30,9 +30,9 @@ bandCampRevolution = function (difficulty) {
     var actualRestartDelay = restartDelay;
 
     //Dimensions
-    var xOffset = (screen.width - 500) / 2;
+    var xOffset = (window.innerWidth - 500) / 2;
     var scoreArrowTop = 150;
-    var yStart = screen.height;
+    var yStart = window.innerHeight;
     var distance = yStart - scoreArrowTop;
     var arrowX = [0, 125, 250, 375];
 
@@ -56,6 +56,7 @@ bandCampRevolution = function (difficulty) {
     var actualFps = 120;
     var resettingGame = false;
     var score = 0;
+    var maxScore = 0;
     var scoreError = 75; //How much error there is on timing the button presses.
     var previousFrameTime = null;
     var gameLoopTimeout = null;
@@ -80,6 +81,7 @@ bandCampRevolution = function (difficulty) {
     var instructions = null;
     var scoreArrows = [];
     var arrows = [];
+    var endElem = null;
 
 
     function restartA() {
@@ -144,6 +146,7 @@ bandCampRevolution = function (difficulty) {
 
         scoreElem.style.color = c;
         instructions.style.color = c;
+        endElem.style.color = c;
     }
 
     function pauseA() {
@@ -211,6 +214,7 @@ bandCampRevolution = function (difficulty) {
                     position: "fixed", fontSize: "100px", zIndex: 10,
                     top: yStart + "px", left: xOffset + arrowX[i] + "px"
                 }));
+                maxScore += scoreError * 100;
 
                 reverseSpawnTimer[i] = -4;
 
@@ -260,7 +264,9 @@ bandCampRevolution = function (difficulty) {
     function resetGame() {
         reverseSpawnTimer = initialTimers.slice(0);
         score = 0;
+        maxScore = 0;
         scoreElem.innerHTML = score;
+        endElem.style.display = "none";
 
         b.pause();
         audioSrc.disconnect();
@@ -404,10 +410,7 @@ bandCampRevolution = function (difficulty) {
 
     //Set up the game once the audio starts playing
     function setUpGame() {
-        if (!a.src.startsWith("https://us-central1-toggl-295618.cloudfunctions.net/bcr") && !a.src.startsWith("http://localhost")) {
-            a.src = `https://us-central1-toggl-295618.cloudfunctions.net/bcr?url=${encodeURIComponent(a.src)}`;
-        }
-        scoreElem = createElement('center', { innerHTML: 0 }, {
+        scoreElem = createElement('center', { innerHTML: "Loading..." }, {
             position: "fixed", width: "500px", fontSize: "60px",
             fontFamily: "Lucida Console", top: scoreArrowTop - 100 + "px",
             left: xOffset + "px", zIndex: 10
@@ -426,23 +429,54 @@ bandCampRevolution = function (difficulty) {
             fontSize: "20px", fontFamily: "Lucida Console"
         });
 
+        endElem = createElement('center', { innerHTML: "Score: ???<br/>Max: ????" }, {
+            position: "fixed", top: scoreArrowTop + 200 + "px",
+            left: xOffset + 60 + "px", zIndex: 10,
+            fontSize: "60px", fontFamily: "Lucida Console",
+            display: "none"
+        });
+
         createScoreArrows();
 
+
+
         setInterval(changeArrowColor, 400);
-        setTimeout(pauseA, 4);
+
     }
 
     function checkLoaded() {
-        a = document.getElementsByTagName('audio')[0];
-        a.crossOrigin = "anonymous";
-        if (a.src) {
-            setTimeout(function () {
-                setUpGame();
-            }, 1000);
+        if (a.readyState == 4) {
+
+            a.addEventListener("ended", function () {
+                endElem.style.display = "block";
+                endElem.innerHTML = "Score: " + score + "<br/>Max: " + maxScore;
+            }, false);
+
+            setTimeout(pauseA, 4);
         } else {
             setTimeout(checkLoaded, 4);
         }
     }
 
-    setTimeout(checkLoaded, 4);
+    function switchAudioSource() {
+        a = document.getElementsByTagName('audio')[0];
+        if (a.src) {
+            if (!a.src.startsWith("https://us-central1-toggl-295618.cloudfunctions.net/bcr") && !a.src.startsWith("http://localhost")) {
+                a.preload = "auto";
+                a.crossOrigin = "anonymous";
+                a.src = `https://us-central1-toggl-295618.cloudfunctions.net/bcr?url=${encodeURIComponent(a.src)}`;
+                setTimeout(checkLoaded, 4);
+            }
+
+            setTimeout(function () {
+                checkLoaded();
+            }, 1000);
+
+        } else {
+            setTimeout(switchAudioSource, 4);
+        }
+    }
+
+    setTimeout(switchAudioSource, 4);
+    setTimeout(setUpGame, 4);
 };
